@@ -41,44 +41,10 @@ Canary Deployment with Ansible
     - include: tasks/start_tomcat.yml
       vars:
         app_version: rollback
------------------------------------------------------------------------------------------------------------------------------------------------
- start-tomcat.yml
-----------------------------------------------------------------------------------------------------------------------------------------------
-- name: start tomcat
-  service: name=tomcat-system state=started
 
-- name: wait for tomcat to be available
-  wait_for: port=8080 delay=20
-
-- name: wait for ping to be available, timeout 300 sec, poll every 5 sec
-  uri: url=http://localhost:8080/ping status_code=200 timeout=300 return_content=yes
-  async: 300
-  poll: 5
------------------------------------------------------------------------------------------------------------------------------------------------
- system-rollback.yml
------------------------------------------------------------------------------------------------------------------------------------------------
-- name: check if backup file exists
-  stat: path="/www/tomcat/tomcat-system/backup/ROOT.war"
-  register: st
-
-- name: check if backup file exists
-  fail: msg="Abort rollback. Backup file doesn't exist"
-  when: not st.stat.exists
-
-- name: stop tomcat
-  service: name=tomcat-system state=stopped
-
-- name: clean tomcat
-  file: path={{ item }} state=absent
-  with_items:
-    - "/www/tomcat/tomcat-system/webapps/ROOT.war"
-    - "/www/tomcat/tomcat-system/webapps/ROOT"
-
-- name: reactivate backup of previous webapp.war
-  command: mv "/www/tomcat/tomcat-system/backup/ROOT.war" "/www/tomcat/tomcat-system/webapps/ROOT.war"
-------------------------------------------------------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------------------------------------------
  system.yml
-------------------------------------------------------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------------------------------------------
 - name: stop tomcat
   service: name=tomcat-system state=stopped
 
@@ -103,3 +69,38 @@ Canary Deployment with Ansible
   copy: src={{ artifact_home }}/system-{{} app_version }}.war
         dest=/www/tomcat/tomcat-system/webapps/ROOT.war
         owner=myUser group=tomcat mode=644
+--------------------------------------------------------------------------------------------------------------------------------------
+         system-rollback.yml
+----------------------------------------------------------------------------------------------------------------------------------------
+- name: check if backup file exists
+  stat: path="/www/tomcat/tomcat-system/backup/ROOT.war"
+  register: st
+
+- name: check if backup file exists
+  fail: msg="Abort rollback. Backup file doesn't exist"
+  when: not st.stat.exists
+
+- name: stop tomcat
+  service: name=tomcat-system state=stopped
+
+- name: clean tomcat
+  file: path={{ item }} state=absent
+  with_items:
+    - "/www/tomcat/tomcat-system/webapps/ROOT.war"
+    - "/www/tomcat/tomcat-system/webapps/ROOT"
+
+- name: reactivate backup of previous webapp.war
+  command: mv "/www/tomcat/tomcat-system/backup/ROOT.war" "/www/tomcat/tomcat-system/webapps/ROOT.war"
+----------------------------------------------------------------------------------------------------------------------------------------
+ start-tomcat.yml
+----------------------------------------------------------------------------------------------------------------------------------------
+- name: start tomcat
+  service: name=tomcat-system state=started
+
+- name: wait for tomcat to be available
+  wait_for: port=8080 delay=20
+
+- name: wait for ping to be available, timeout 300 sec, poll every 5 sec
+  uri: url=http://localhost:8080/ping status_code=200 timeout=300 return_content=yes
+  async: 300
+  poll: 5
